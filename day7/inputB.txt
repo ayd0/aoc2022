@@ -1,0 +1,13 @@
+$ cd /
+$ ls
+268495 jgfbgjdb
+dir ltcqgnc
+272455 pct.bbd
+200036 phthcq
+174378 qld
+dir rbmstsf
+130541 trhbvp.fmm
+dir twjcmp
+$ cd ltcqgnc
+$ ls
+227634 brjmpbfg.hjh
