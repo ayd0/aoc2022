@@ -5,6 +5,7 @@ const data = fs.readFileSync(process.argv[2], 'utf-8').split('\n');
 if (process.argv[3] == 1) {
     let numFiles = 0;
     let numDirs = 0;
+    let cmdErr = false;
 
     data.forEach(el => {
         if (+el[0] > 0) {
@@ -28,6 +29,7 @@ if (process.argv[3] == 1) {
 
     const dir = ['/', 0, []];
     let path = [0];
+    let cmdErr = false;
 
     const getCurDir = (ovPath, total) => {
         // override path
@@ -35,12 +37,13 @@ if (process.argv[3] == 1) {
         let pseudo = dir;
 
         ovPath.forEach((seq, idx) => {
-            // arg for incrementFileSizes(), adds total up stack to fs
-            if (total !== undefined && idx !== path.length) pseudo[1] += total;
-
             if (seq > 0) {
+                // arg for incrementFileSizes(), adds total up stack to fs
+                if (total !== undefined && idx !== path.length) pseudo[1] += total;
+
                 // should only be selecting index 0 when home is empty
                 pseudo = pseudo[2][seq - 1];
+                
             } else {
                 return pseudo;
             }
@@ -51,7 +54,10 @@ if (process.argv[3] == 1) {
 
     const getLastDirName = () => {
         if (getCurDir()[0] !== '/') {
-            let ovPath = path.slice().pop();
+            let ovPath = path.slice();
+            ovPath.pop();
+            if (!Array.isArray(ovPath)) ovPath = [ovPath];
+
             return getCurDir(ovPath)[0];
         } else {
             return '/';
@@ -59,7 +65,7 @@ if (process.argv[3] == 1) {
     }
 
     const mkdir = (name) => {
-        getCurDir()[2].push([getLastDirName() + name, 0, []]);
+        getCurDir()[2].push([getLastDirName() + '/' + name, 0, []]);
     }
 
     const incrementFileSizes = () => {
@@ -77,8 +83,12 @@ if (process.argv[3] == 1) {
         }
     }
 
-    data.some(cmd => {
+    /* MAIN PASS */
+    data.some((cmd, cmdIdx) => {
         try {
+            // TK: eTrack : first "$ cd .." cmd produces path NaN error
+            if (path.includes(NaN)) throw(new Error('Path contains element which is NaN!'));
+
             if (cmd[0] === '$') {
                 if (cmd[2] === 'c') {
                     // handle file sizes on directory change
@@ -91,6 +101,8 @@ if (process.argv[3] == 1) {
                     } else if (cmd[5] === '.') {
                         // up
                         path.pop();                    
+                        path[path.length - 1] = 0;
+                        if (!Array.isArray(path)) path = [path];
                     } else {
                         // down: name
                         const dirName = cmd.slice(5);
@@ -122,16 +134,16 @@ if (process.argv[3] == 1) {
             }
         } catch (err) {
             console.error(err);
-            console.log("ERROR: DIR  >", typeof dir, dir);
-            console.log("ERROR: PATH >", typeof path, path);
-            console.log("ERROR: CMD  >", typeof cmd, cmd);
+            console.log(`ERROR: CMD (${cmdIdx})  >`, typeof cmd, cmd);
+            cmdErr = true;
             return true;
         }
         return false;
     })
     // last pass w/o cd
-    incrementFileSizes();
+    if (!cmdErr) incrementFileSizes();
 
     console.log("DIR", dir);
     console.log("PATH", path);
+    console.log("curDir", getCurDir());
 }

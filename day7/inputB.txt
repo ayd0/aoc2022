@@ -11,3 +11,4 @@ dir twjcmp
 $ cd ltcqgnc
 $ ls
 227634 brjmpbfg.hjh
+dir pwjcmp
