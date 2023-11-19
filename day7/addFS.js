@@ -27,7 +27,7 @@ if (process.argv[3] == 1) {
         *   *- if subDirs is empty, path should be 0!
         */
 
-    const dir = ['/', 0, []];
+        const dir = ['/', 0, []];
     let path = [0];
     let cmdErr = false;
 
@@ -43,7 +43,7 @@ if (process.argv[3] == 1) {
 
                 // should only be selecting index 0 when home is empty
                 pseudo = pseudo[2][seq - 1];
-                
+
             } else {
                 return pseudo;
             }
@@ -71,7 +71,7 @@ if (process.argv[3] == 1) {
     const incrementFileSizes = () => {
         // in FIRST pass, only write to getCurDir[1] if it's EQUAL to 0 
         // similarly, only write up stack when getCurDir[1] is EQUAL to 0
-        
+
         let total = 0;
         if (getCurDir()[1] === 0) { 
             if (getCurDir().length > 3) { 
@@ -84,66 +84,80 @@ if (process.argv[3] == 1) {
     }
 
     /* MAIN PASS */
-    data.some((cmd, cmdIdx) => {
-        try {
-            // TK: eTrack : first "$ cd .." cmd produces path NaN error
-            if (path.includes(NaN)) throw(new Error('Path contains element which is NaN!'));
+        data.some((cmd, cmdIdx) => {
+            try {
+                if (path.includes(NaN)) throw(new Error('Path contains element which is NaN!'));
 
-            if (cmd[0] === '$') {
-                if (cmd[2] === 'c') {
-                    // handle file sizes on directory change
-                    incrementFileSizes();
+                if (cmd[0] === '$') {
+                    if (cmd[2] === 'c') {
+                        // handle file sizes on directory change
+                        incrementFileSizes();
 
-                    // process cd command
-                    if (cmd[5] === '/') {
-                        // rooot
-                        path = [0];
-                    } else if (cmd[5] === '.') {
-                        // up
-                        path.pop();                    
-                        path[path.length - 1] = 0;
-                        if (!Array.isArray(path)) path = [path];
-                    } else {
-                        // down: name
-                        const dirName = cmd.slice(5);
-                        let idx;
-                        // [].indexOf not working in this case, hacky implementation
-                        getCurDir()[2].some((el, i) => {
-                            if (el[0].slice(el[0].length - dirName.length) === dirName) {
-                                idx = i;
-                                return true;
-                            }
-                            return false;
-                        });
-                        path[path.length - 1] += idx + 1;
-                        path.push(0);
+                        // process cd command
+                        if (cmd[5] === '/') {
+                            // rooot
+                            path = [0];
+                        } else if (cmd[5] === '.') {
+                            // up
+                            path.pop();                    
+                            path[path.length - 1] = 0;
+                            if (!Array.isArray(path)) path = [path];
+                        } else {
+                            // down: name
+                            const dirName = cmd.slice(5);
+                            let idx;
+                            // [].indexOf not working in this case, hacky implementation
+                            getCurDir()[2].some((el, i) => {
+                                if (el[0].slice(el[0].length - dirName.length) === dirName) {
+                                    idx = i;
+                                    return true;
+                                }
+                                return false;
+                            });
+                            path[path.length - 1] += idx + 1;
+                            path.push(0);
+                        }
                     }
-                }
-            } else if (cmd[0] === 'd') {
-                // check if dir(name) exists and if not, create dir
-                const dirName = cmd.slice(4);
+                } else if (cmd[0] === 'd') {
+                    // check if dir(name) exists and if not, create dir
+                    const dirName = cmd.slice(4);
 
-                const idx = getCurDir()[2].indexOf(el => el[0] === dirName);
-                if (idx === -1) {
-                    // create dir
-                    mkdir(dirName);
+                    const idx = getCurDir()[2].indexOf(el => el[0] === dirName);
+                    if (idx === -1) {
+                        // create dir
+                        mkdir(dirName);
+                    }
+                } else if (+cmd[0] >= 0) {
+                    // cmd[0] is real num
+                    getCurDir().push(Number(cmd.match(/\d+/)));
                 }
-            } else if (+cmd[0] >= 0) {
-                // cmd[0] is real num
-                getCurDir().push(Number(cmd.match(/\d+/)));
+            } catch (err) {
+                console.error(err);
+                console.log(`ERROR: CMD (${cmdIdx})  >`, typeof cmd, cmd);
+                cmdErr = true;
+                return true;
             }
-        } catch (err) {
-            console.error(err);
-            console.log(`ERROR: CMD (${cmdIdx})  >`, typeof cmd, cmd);
-            cmdErr = true;
-            return true;
-        }
-        return false;
-    })
-    // last pass w/o cd
-    if (!cmdErr) incrementFileSizes();
+            return false;
+        })
 
-    console.log("DIR", dir);
-    console.log("PATH", path);
-    console.log("curDir", getCurDir());
+    const dSizes = [];
+
+    if (!cmdErr) {
+        // last pass w/o cd
+        incrementFileSizes();
+
+        // for each directory, grab val, enter d[2], repeat
+        const rDirGetFS = (d) => {
+            if (d[1] <= 100000) dSizes.push(d[1]);
+            if (d[2].length > 0) {
+                d[2].forEach(nd => {
+                    rDirGetFS(nd);
+                })
+            }
+        }
+
+        rDirGetFS(dir);
+    }
+
+    console.log(dSizes.reduce((part, a) => part + a, 0));
 }
