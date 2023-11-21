@@ -172,15 +172,11 @@ if (process.argv[3] == 1) {
     // console.log(dSizes.reduce((part, a) => part + a, 0));
 
     // part B:
-    const requiredFreeSpace = 30000000 - (70000000 - dir[1]);
-    console.log("Free Space Required for Update: ", requiredFreeSpace);
+    const totalDiskSpace = 70000000;
+    const updateSpaceReq = 30000000;
 
-    dSizes.some(f => {
-        if (f >= requiredFreeSpace) {
-            console.log("Closest File Size: ", f);
-            return true;
-        }
-        return false;
-    })
+    console.log(dSizes.length);
+    console.log("Total added FS: ", dSizes.reduce((acc, cur) => acc + cur, 0));
+    console.log("Final FS: ", dSizes.reduce((acc, cur) => acc + cur, 0));
 
 }
